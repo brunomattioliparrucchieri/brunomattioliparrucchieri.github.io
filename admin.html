@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Gestione prenotazioni – Salone Bruno Mattioli</title>
+  <link rel="icon" href="logo-mark.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="index.html" aria-label="Torna al sito"><img src="logo.svg" alt="Bruno Mattioli"></a>
+    <nav class="nav"><button class="btn small" id="logout" hidden type="button">Esci</button></nav>
+  </div>
+</header>
+
+<main>
+  <section class="booking">
+    <div class="wrap narrow">
+      <h1>Gestione prenotazioni</h1>
+      <div id="status" role="status" aria-live="polite"></div>
+
+      <form id="login" novalidate>
+        <label class="f" for="email">Email</label>
+        <input type="email" id="email" autocomplete="username" required>
+        <label class="f" for="password">Password</label>
+        <input type="password" id="password" autocomplete="current-password" required>
+        <p style="margin-top:1.4rem"><button class="btn" type="submit">Accedi</button></p>
+      </form>
+
+      <div id="app" hidden>
+        <fieldset>
+          <legend>Appuntamenti</legend>
+          <div class="row">
+            <div><label class="f" for="from">Da</label><input type="date" id="from"></div>
+            <div><label class="f" for="fop">Operatore</label><select id="fop"><option value="">Tutti</option></select></div>
+          </div>
+          <label class="consent"><input type="checkbox" id="showcx"><span>Mostra anche gli annullati</span></label>
+          <div id="agenda" class="agenda" aria-live="polite"></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Ferie e chiusure</legend>
+          <form id="cform">
+            <label class="f" for="cop">Chi</label>
+            <select id="cop"><option value="">Tutto il salone</option></select>
+            <div class="row">
+              <div><label class="f" for="cfrom">Dal</label><input type="date" id="cfrom" required></div>
+              <div><label class="f" for="cto">Al (compreso)</label><input type="date" id="cto" required></div>
+            </div>
+            <label class="f" for="cnote">Nota (facoltativa)</label>
+            <input type="text" id="cnote" maxlength="100" placeholder="Es. ferie estive">
+            <p style="margin-top:1.2rem"><button class="btn" type="submit">Aggiungi chiusura</button></p>
+          </form>
+          <div id="closures" style="margin-top:1.5rem"></div>
+        </fieldset>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  const TZ = 'Europe/Rome';
+  const $ = (s) => document.querySelector(s);
+  let sb, operators = [];
+
+  const fmtTime = (iso) => new Date(iso).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: TZ });
+  const fmtDay = (iso) => new Date(iso).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', timeZone: TZ });
+  const fmtYmd = (ymd) => new Date(ymd + 'T12:00:00Z').toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+  const todayRome = () => new Date().toLocaleDateString('en-CA', { timeZone: TZ });
+
+  function el(tag, props, ...kids) {
+    const n = document.createElement(tag);
+    Object.entries(props || {}).forEach(([k, v]) => { if (k === 'class') n.className = v; else if (k === 'text') n.textContent = v; else n.setAttribute(k, v); });
+    kids.forEach((k) => k && n.append(k));
+    return n;
+  }
+  function notice(msg, kind) {
+    const b = $('#status'); b.innerHTML = '';
+    if (msg) b.appendChild(el('p', { class: 'notice' + (kind ? ' ' + kind : ''), text: msg }));
+  }
+
+  async function init() {
+    const c = window.BOOKING_CONFIG;
+    if (!window.supabase || !c || /INSERISCI/.test(c.url)) return notice('Configura config.js con i dati di Supabase.');
+    sb = window.supabase.createClient(c.url, c.key);
+    $('#login').addEventListener('submit', login);
+    $('#logout').addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
+    const { data } = await sb.auth.getSession();
+    if (data.session) await enter();
+  }
+
+  async function login(e) {
+    e.preventDefault(); notice('');
+    const { error } = await sb.auth.signInWithPassword({ email: $('#email').value.trim(), password: $('#password').value });
+    if (error) return notice('Email o password non corretti.');
+    await enter();
+  }
+
+  async function enter() {
+    const { data: ok } = await sb.rpc('is_admin');
+    if (!ok) { await sb.auth.signOut(); return notice('Questo account non è autorizzato.'); }
+    $('#login').hidden = true; $('#app').hidden = false; $('#logout').hidden = false; notice('');
+    const o = await sb.from('operators').select('id,name,active').order('id');
+    operators = o.data || [];
+    operators.forEach((x) => { ['#fop', '#cop'].forEach((s) => $(s).appendChild(el('option', { value: x.id, text: x.name }))); });
+    $('#from').value = todayRome();
+    ['#from', '#fop', '#showcx'].forEach((s) => $(s).addEventListener('change', loadAgenda));
+    $('#cform').addEventListener('submit', addClosure);
+    loadAgenda(); loadClosures();
+  }
+
+  async function loadAgenda() {
+    const box = $('#agenda'); box.innerHTML = '';
+    const from = new Date($('#from').value + 'T00:00:00Z'); from.setUTCHours(from.getUTCHours() - 2);
+    let q = sb.from('appointments')
+      .select('id,starts_at,ends_at,status,customer_name,customer_phone,customer_email,notes,operator_id,operators(name),services(name)')
+      .gte('starts_at', from.toISOString()).order('starts_at').limit(300);
+    if ($('#fop').value) q = q.eq('operator_id', Number($('#fop').value));
+    if (!$('#showcx').checked) q = q.eq('status', 'confirmed');
+    const { data, error } = await q;
+    if (error) return box.appendChild(el('p', { class: 'hint', text: 'Errore nel caricamento degli appuntamenti.' }));
+    if (!data.length) return box.appendChild(el('p', { class: 'hint', text: 'Nessun appuntamento.' }));
+    let last = '';
+    data.forEach((a) => {
+      const day = fmtDay(a.starts_at);
+      if (day !== last) { box.appendChild(el('h3', { text: day })); last = day; }
+      const phone = (a.customer_phone || '').replace(/[^\d+]/g, '');
+      const who = el('div', {}, el('strong', { text: a.customer_name }),
+        el('small', { text: a.services.name + ' · ' + a.operators.name }),
+        (() => { const s = el('small'); s.append(el('a', { href: 'tel:' + phone, text: a.customer_phone })); if (a.customer_email) s.append(' · ' + a.customer_email); return s; })(),
+        a.notes ? el('small', { text: 'Note: ' + a.notes }) : null);
+      const row = el('div', { class: 'appt' + (a.status === 'cancelled' ? ' cancelled' : '') }, el('strong', { text: fmtTime(a.starts_at) }), who);
+      if (a.status === 'confirmed') {
+        const b = el('button', { class: 'btn small ghost', type: 'button', text: 'Annulla' });
+        b.addEventListener('click', async () => {
+          if (!confirm('Annullare l’appuntamento di ' + a.customer_name + '?')) return;
+          const r = await sb.from('appointments').update({ status: 'cancelled' }).eq('id', a.id);
+          if (r.error) notice('Non sono riuscito ad annullare.'); else loadAgenda();
+        });
+        row.appendChild(b);
+      }
+      box.appendChild(row);
+    });
+  }
+
+  async function loadClosures() {
+    const box = $('#closures'); box.innerHTML = '';
+    const { data, error } = await sb.from('time_off').select('id,operator_id,starts_on,ends_on,note').gte('ends_on', todayRome()).order('starts_on');
+    if (error) return;
+    if (!data.length) return box.appendChild(el('p', { class: 'hint', text: 'Nessuna chiusura programmata.' }));
+    data.forEach((t) => {
+      const who = t.operator_id ? (operators.find((o) => o.id === t.operator_id) || {}).name : 'Tutto il salone';
+      const when = t.starts_on === t.ends_on ? fmtYmd(t.starts_on) : fmtYmd(t.starts_on) + ' – ' + fmtYmd(t.ends_on);
+      const row = el('div', { class: 'appt' }, el('span'), el('div', {}, el('strong', { text: who }), el('small', { text: when + (t.note ? ' · ' + t.note : '') })));
+      const b = el('button', { class: 'btn small ghost', type: 'button', text: 'Elimina' });
+      b.addEventListener('click', async () => { await sb.from('time_off').delete().eq('id', t.id); loadClosures(); });
+      row.appendChild(b); box.appendChild(row);
+    });
+  }
+
+  async function addClosure(e) {
+    e.preventDefault();
+    const r = await sb.from('time_off').insert({
+      operator_id: $('#cop').value ? Number($('#cop').value) : null,
+      starts_on: $('#cfrom').value, ends_on: $('#cto').value, note: $('#cnote').value.trim() || null
+    });
+    if (r.error) return notice('Controlla le date: la fine non può precedere l’inizio.');
+    $('#cform').reset(); notice('Chiusura aggiunta.', 'ok'); loadClosures();
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

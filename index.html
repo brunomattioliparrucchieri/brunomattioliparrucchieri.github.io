@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bruno Mattioli – Salone di parrucchieri per donna e uomo a Milano</title>
+  <meta name="description" content="Salone Bruno Mattioli a Milano: taglio, piega, colore e trattamenti per donna e uomo.">
+  <link rel="icon" href="logo-mark.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Bruno Mattioli, torna in alto"><img src="logo.svg" alt="Bruno Mattioli, salone donna e uomo"></a>
+    <nav class="nav" aria-label="Principale">
+      <a href="#servizi">Servizi</a>
+      <a href="#salone">Il salone</a>
+      <a href="#chi-siamo">Chi siamo</a>
+      <a href="#contatti">Contatti</a>
+      <a class="btn" href="prenota.html">Prenota</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <h1>Capelli curati, su misura per te.</h1>
+        <p class="lead">Taglio, piega, colore e trattamenti per donna e uomo, nel cuore di Milano.</p>
+        <div class="actions">
+          <a class="btn" href="prenota.html">Prenota online</a>
+          <a class="btn ghost" href="#servizi">Scopri i servizi</a>
+        </div>
+      </div>
+
+      <!-- Tre archi, ognuno con un simbolo del mestiere: onde, forbici, pettine. Badge "Dal 1991". -->
+      <svg class="hero-art" viewBox="0 0 480 480" role="img" aria-label="Tre archi con onde, forbici e pettine, e il marchio Dal 1991">
+        <defs>
+          <clipPath id="a1"><path d="M10 480V270a70 70 0 0 1 140 0v210z"/></clipPath>
+          <clipPath id="a3"><path d="M330 480V330a70 70 0 0 1 140 0v150z"/></clipPath>
+        </defs>
+
+        <!-- Arco 1: onde -->
+        <path d="M10 480V270a70 70 0 0 1 140 0v210z" style="fill:var(--blush)"/>
+        <g clip-path="url(#a1)" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="4" stroke-linecap="round">
+          <path d="M10 300q17.5-22 35 0t35 0t35 0t35 0"/>
+          <path d="M10 340q17.5-22 35 0t35 0t35 0t35 0"/>
+          <path d="M10 380q17.5-22 35 0t35 0t35 0t35 0"/>
+          <path d="M10 420q17.5-22 35 0t35 0t35 0t35 0"/>
+          <path d="M10 460q17.5-22 35 0t35 0t35 0t35 0"/>
+        </g>
+
+        <!-- Arco 2: forbici -->
+        <path d="M170 480V160a70 70 0 0 1 140 0v320z" style="fill:var(--sage)"/>
+        <g fill="none" stroke="#3B3A39" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="212" y1="190" x2="272" y2="352"/>
+          <line x1="268" y1="190" x2="208" y2="352"/>
+          <circle cx="278" cy="372" r="18"/>
+          <circle cx="202" cy="372" r="18"/>
+        </g>
+
+        <!-- Arco 3: pettine -->
+        <path d="M330 480V330a70 70 0 0 1 140 0v150z" style="fill:var(--mist)"/>
+        <g clip-path="url(#a3)" fill="none" stroke="#3B3A39" stroke-width="4" stroke-linecap="round">
+          <line x1="348" y1="352" x2="452" y2="352" stroke-width="7"/>
+          <line x1="352" y1="364" x2="352" y2="440"/>
+          <line x1="367" y1="364" x2="367" y2="440"/>
+          <line x1="382" y1="364" x2="382" y2="440"/>
+          <line x1="397" y1="364" x2="397" y2="440"/>
+          <line x1="412" y1="364" x2="412" y2="440"/>
+          <line x1="427" y1="364" x2="427" y2="440"/>
+          <line x1="442" y1="364" x2="442" y2="440"/>
+        </g>
+
+        <!-- Badge -->
+        <circle cx="400" cy="226" r="46" style="fill:var(--sand)"/>
+        <text x="400" y="222" text-anchor="middle" font-size="14" style="font-family:var(--sans);font-weight:600;letter-spacing:1px;fill:#3B3A39">Dal</text>
+        <text x="400" y="246" text-anchor="middle" font-size="24" style="font-family:var(--serif);font-weight:500;fill:#3B3A39">1991</text>
+      </svg>
+    </div>
+  </section>
+
+  <section id="servizi" class="tint">
+    <div class="wrap">
+      <h2>Servizi</h2>
+      <!-- TODO: verificare e completare l'elenco con quello reale del salone -->
+      <div class="services">
+        <div class="service">
+          <h3>Donna</h3>
+          <ul>
+            <li>Taglio e consulenza</li>
+            <li>Piega</li>
+            <li>Colore e schiariture</li>
+            <li>Trattamenti per i capelli</li>
+          </ul>
+        </div>
+        <div class="service">
+          <h3>Uomo</h3>
+          <ul>
+            <li>Taglio</li>
+            <li>Rifinitura</li>
+            <li>Colore</li>
+            <li>Trattamenti per i capelli</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="salone" class="about">
+    <div class="wrap">
+      <div class="photo" role="img" aria-label="Spazio per una foto del salone"></div>
+      <div>
+        <h2>Il salone</h2>
+        <p>Il Salone Bruno Mattioli accoglie donne e uomini a Milano. Qui trovi un taglio pensato per il tuo viso e per la tua routine, e il tempo per parlarne prima di cominciare.</p>
+        <p>La nostra attività nasce nel 1991 a Milano, dalla passione e dall'esperienza di Bruno Mattioli, con l'obiettivo di offrire un servizio di qualità dedicato alla cura e alla bellezza dei capelli. <br>
+
+Situato in via Teodosio 56, nel quartiere Casoretto, il nostro salone accoglie donne e uomini, offrendo servizi di taglio, piega, colore, effetti luce e trattamenti specifici, con attenzione alle esigenze e allo stile di ogni cliente. <br>
+
+Nel corso degli anni, abbiamo fatto della cura della persona e dell'attenzione ai dettagli i principi del nostro lavoro. Crediamo che ogni cliente abbia una propria identità da valorizzare e che il giusto stile nasca dall'ascolto, dalla competenza e dalla cura di ogni particolare.
+          <br>
+
+Ancora oggi, il nostro impegno è quello di accompagnare ogni cliente nella scelta del proprio look, offrendo professionalità, attenzione e un servizio pensato per valorizzare la bellezza individuale.
+<br>
+<b>Salone Bruno Mattioli: esperienza, cura e stile, dal 1991.</b></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="chi-siamo" class="tint">
+    <div class="wrap">
+      <h2>Chi siamo</h2>
+      <!-- TODO: aggiungere le foto: <div class="portrait"><img src="img/bruno.webp" alt="Bruno Mattioli"></div> -->
+      <div class="team">
+        <article class="person">
+          <div class="portrait p-blush" role="img" aria-label="Spazio per il ritratto di Bruno Mattioli"></div>
+          <div>
+            <h3>Bruno Mattioli</h3>
+            <p>Ha fondato il salone nel 1991 e fa il parrucchiere da oltre trent'anni. La sua esperienza è la base del lavoro di tutta la squadra.</p>
+          </div>
+        </article>
+        <article class="person">
+          <div class="portrait"><img src="img/chi-siamo-alice.jpg" alt="Alice Mattioli"></div>
+          <div>
+            <h3>Alice Mattioli</h3>
+            <p>Diplomata all'Accademia di trucco e parrucco per il cinema, porta in salone una formazione costruita sull'attenzione all'immagine e ai dettagli.</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="tint-mist" aria-label="Galleria">
+    <div class="wrap">
+      <h2>Alcuni lavori</h2>
+      <div class="gallery">
+        <span><img src="img/lavoro-1.webp" alt="Lavoro del salone 1"></span>
+        <span><img src="img/lavoro-2.webp" alt="Lavoro del salone 2"></span>
+        <span><img src="img/lavoro-3.webp" alt="Lavoro del salone 3"></span>
+        <span><img src="img/lavoro-4.webp" alt="Lavoro del salone 4"></span>
+      </div>
+    </div>
+  </section>
+
+  <section id="contatti" class="contact">
+    <div class="wrap">
+      <div>
+        <h2>Vieni a trovarci</h2>
+        <address>
+          <p><strong>Salone Bruno Mattioli</strong><br>
+          Via Teodosio, 56<br>
+          20131 Milano</p>
+        </address>
+        <div class="actions">
+          <a class="btn" href="prenota.html">Prenota online</a>
+          <a class="btn ghost" href="tel:+390226826970">Chiama 0226826970</a>
+          <a class="btn ghost" href="https://maps.app.goo.gl/C1U6cg1EKnnrN2yR9" target="_blank" rel="noopener">Come arrivare</a>
+        </div>
+        <p style="margin-top:1.6rem">
+          <a class="link" href="https://www.instagram.com/brunomattioliparrucchieri/" target="_blank" rel="noopener">Instagram</a>
+          &nbsp;&nbsp;
+          <a class="link" href="https://www.facebook.com/salonebrunomattioli/" target="_blank" rel="noopener">Facebook</a>
+        </p>
+      </div>
+      <div>
+        <h2>Orari</h2>
+        <dl>
+          <dt>Lunedì</dt><dd>Chiuso</dd>
+          <dt>Martedì</dt><dd>10:00 - 19:00</dd>
+          <dt>Mercoledì</dt><dd>10:00 - 19:00</dd>
+          <dt>Giovedì</dt><dd>10:00 - 19:00</dd>
+          <dt>Venerdì</dt><dd>09:00 - 19:00</dd>
+          <dt>Sabato</dt><dd>09:00 - 19:00</dd>
+          <dt>Domenica</dt><dd>Chiuso</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Bruno Mattioli – P.IVA [partita IVA]</span>
+    <span><a href="#">Privacy policy</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

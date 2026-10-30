@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prenota online – Salone Bruno Mattioli, Milano</title>
+  <meta name="description" content="Prenota online il tuo appuntamento al Salone Bruno Mattioli di Milano: scegli servizio, operatore e orario.">
+  <link rel="icon" href="logo-mark.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="index.html" aria-label="Bruno Mattioli, torna alla home"><img src="logo.svg" alt="Bruno Mattioli, salone donna e uomo"></a>
+    <nav class="nav" aria-label="Principale">
+      <a href="index.html#servizi">Servizi</a>
+      <a href="index.html#salone">Il salone</a>
+      <a href="index.html#contatti">Contatti</a>
+      <a class="btn" href="tel:+390226826970">Chiama</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="booking">
+    <div class="wrap narrow">
+      <h1>Prenota online</h1>
+      <p class="lead">Scegli servizio, operatore e orario. Per modificare o disdire un appuntamento chiamaci allo <a href="tel:+390226826970">02 2682 6970</a>.</p>
+
+      <div id="status" role="status" aria-live="polite"></div>
+
+      <form id="bk" novalidate>
+        <fieldset>
+          <legend>1. Servizio</legend>
+          <label class="f" for="service">Cosa ti serve?</label>
+          <select id="service" required><option value="">Caricamento…</option></select>
+        </fieldset>
+
+        <fieldset>
+          <legend>2. Con chi</legend>
+          <div id="operators" class="chips" role="radiogroup" aria-label="Operatore"></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>3. Giorno</legend>
+          <label class="f" for="day">Scegli la data</label>
+          <input type="date" id="day" required>
+          <p class="hint">Siamo aperti dal martedì al sabato.</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>4. Orario</legend>
+          <div id="slots" class="chips" role="group" aria-label="Orari disponibili"><p class="hint">Scegli servizio, operatore e giorno per vedere gli orari.</p></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>5. I tuoi dati</legend>
+          <label class="f" for="name">Nome e cognome</label>
+          <input type="text" id="name" autocomplete="name" maxlength="100" required>
+          <label class="f" for="phone">Telefono</label>
+          <input type="tel" id="phone" autocomplete="tel" maxlength="30" required>
+          <label class="f" for="email">Email (facoltativa)</label>
+          <input type="email" id="email" autocomplete="email" maxlength="150">
+          <label class="f" for="notes">Note (facoltative)</label>
+          <textarea id="notes" maxlength="500"></textarea>
+          <div class="hp" aria-hidden="true"><label>Non compilare <input type="text" id="website" tabindex="-1" autocomplete="off"></label></div>
+          <label class="consent"><input type="checkbox" id="consent" required>
+            <span>Ho letto l'<a href="privacy.html" target="_blank" rel="noopener">informativa privacy</a> e acconsento al trattamento dei miei dati per gestire la prenotazione.</span></label>
+        </fieldset>
+
+        <button class="btn" type="submit" id="submit" disabled>Conferma prenotazione</button>
+      </form>
+
+      <div id="done" hidden></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Bruno Mattioli – P.IVA [partita IVA]</span>
+    <span><a href="privacy.html">Privacy policy</a></span>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  const TZ = 'Europe/Rome';
+  const $ = (s) => document.querySelector(s);
+  const state = { operator: null, slot: null, token: 0 };
+  let sb, services = [], operators = [];
+
+  const fmtTime = (iso) => new Date(iso).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: TZ });
+  const fmtDay = (iso) => new Date(iso).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', timeZone: TZ });
+  const todayRome = () => new Date().toLocaleDateString('en-CA', { timeZone: TZ });
+  const addDays = (ymd, n) => { const d = new Date(ymd + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+
+  function notice(msg, kind) {
+    const box = $('#status');
+    box.innerHTML = '';
+    if (!msg) return;
+    const p = document.createElement('p');
+    p.className = 'notice' + (kind ? ' ' + kind : '');
+    p.textContent = msg;
+    box.appendChild(p);
+  }
+  function unavailable() {
+    notice('La prenotazione online non è disponibile in questo momento. Chiamaci allo 02 2682 6970 e fissiamo insieme l’appuntamento.');
+    $('#bk').hidden = true;
+  }
+
+  async function init() {
+    const c = window.BOOKING_CONFIG;
+    if (!window.supabase || !c || /INSERISCI/.test(c.url)) return unavailable();
+    sb = window.supabase.createClient(c.url, c.key);
+    const [s, o] = await Promise.all([
+      sb.from('services').select('id,name,category,duration_min').eq('active', true).order('sort'),
+      sb.from('operators').select('id,name').eq('active', true).order('id')
+    ]);
+    if (s.error || o.error || !s.data.length || !o.data.length) return unavailable();
+    services = s.data; operators = o.data;
+
+    const sel = $('#service');
+    sel.innerHTML = '<option value="">Scegli un servizio</option>';
+    ['Donna', 'Uomo'].forEach((cat) => {
+      const items = services.filter((x) => x.category === cat);
+      if (!items.length) return;
+      const g = document.createElement('optgroup'); g.label = cat;
+      items.forEach((x) => { const op = document.createElement('option'); op.value = x.id; op.textContent = x.name + ' (' + x.duration_min + ' min)'; g.appendChild(op); });
+      sel.appendChild(g);
+    });
+
+    const box = $('#operators');
+    const opts = [{ id: 'any', name: 'Nessuna preferenza' }].concat(operators);
+    opts.forEach((x, i) => {
+      const l = document.createElement('label');
+      const r = document.createElement('input'); r.type = 'radio'; r.name = 'op'; r.value = x.id;
+      if (i === 0) { r.checked = true; state.operator = 'any'; }
+      const sp = document.createElement('span'); sp.textContent = x.name;
+      l.append(r, sp); box.appendChild(l);
+      r.addEventListener('change', () => { state.operator = r.value; loadSlots(); });
+    });
+
+    const day = $('#day'); const t = todayRome();
+    day.min = t; day.max = addDays(t, 60);
+    day.addEventListener('change', loadSlots);
+    sel.addEventListener('change', loadSlots);
+    ['name', 'phone', 'consent'].forEach((id) => $('#' + id).addEventListener('input', updateSubmit));
+    $('#consent').addEventListener('change', updateSubmit);
+    $('#bk').addEventListener('submit', submit);
+  }
+
+  function updateSubmit() {
+    const ok = state.slot && $('#name').value.trim().length >= 2 && $('#phone').value.trim().length >= 6 && $('#consent').checked;
+    $('#submit').disabled = !ok;
+  }
+
+  async function loadSlots() {
+    state.slot = null; updateSubmit();
+    const box = $('#slots'); const day = $('#day').value; const svc = $('#service').value;
+    box.innerHTML = '';
+    const msg = (t) => { const p = document.createElement('p'); p.className = 'hint'; p.textContent = t; box.appendChild(p); };
+    if (!svc || !state.operator || !day) return msg('Scegli servizio, operatore e giorno per vedere gli orari.');
+    msg('Cerco gli orari…');
+    const my = ++state.token;
+    const ops = state.operator === 'any' ? operators.map((o) => o.id) : [Number(state.operator)];
+    const res = await Promise.all(ops.map((id) => sb.rpc('get_slots', { p_day: day, p_operator: id, p_service: Number(svc) })));
+    if (my !== state.token) return;
+    box.innerHTML = '';
+    if (res.some((r) => r.error)) return msg('Non riesco a caricare gli orari. Riprova o chiamaci allo 02 2682 6970.');
+    const map = new Map();
+    res.forEach((r, i) => (r.data || []).forEach((row) => {
+      const k = new Date(row.slot_start).getTime();
+      if (!map.has(k)) map.set(k, { iso: row.slot_start, op: ops[i] });
+    }));
+    const slots = [...map.entries()].sort((a, b) => a[0] - b[0]).map((e) => e[1]);
+    if (!slots.length) return msg('Nessun orario disponibile in questa data. Prova un altro giorno.');
+    slots.forEach((s) => {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = fmtTime(s.iso); b.setAttribute('aria-pressed', 'false');
+      b.addEventListener('click', () => {
+        box.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', 'false'));
+        b.setAttribute('aria-pressed', 'true'); state.slot = s; updateSubmit();
+      });
+      box.appendChild(b);
+    });
+  }
+
+  async function submit(e) {
+    e.preventDefault();
+    if ($('#submit').disabled) return;
+    const svc = services.find((x) => String(x.id) === $('#service').value);
+    const op = operators.find((x) => x.id === state.slot.op);
+    if ($('#website').value) { return done(svc, op); }           // honeypot anti-bot
+    $('#submit').disabled = true; $('#submit').textContent = 'Un momento…';
+    const { error } = await sb.rpc('create_booking', {
+      p_operator: state.slot.op, p_service: svc.id, p_start: state.slot.iso,
+      p_name: $('#name').value, p_phone: $('#phone').value,
+      p_email: $('#email').value || null, p_notes: $('#notes').value || null
+    });
+    $('#submit').textContent = 'Conferma prenotazione';
+    if (error) {
+      if (/non disponibile/i.test(error.message)) { notice('Questo orario è stato appena occupato. Scegline un altro.'); loadSlots(); }
+      else if (/3 appuntamenti/i.test(error.message)) { notice(error.message); }
+      else { notice('Non sono riuscito a registrare la prenotazione. Chiamaci allo 02 2682 6970.'); }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    done(svc, op);
+  }
+
+  function done(svc, op) {
+    $('#bk').hidden = true; notice('');
+    const d = $('#done'); d.hidden = false; d.innerHTML = '';
+    const box = document.createElement('div'); box.className = 'notice ok';
+    const h = document.createElement('h2'); h.textContent = 'Prenotazione confermata';
+    const p = document.createElement('p');
+    p.textContent = svc.name + ' con ' + op.name + ', ' + fmtDay(state.slot.iso) + ' alle ' + fmtTime(state.slot.iso) + '. Ti aspettiamo in via Teodosio 56, Milano.';
+    const p2 = document.createElement('p'); p2.style.marginTop = '.8rem';
+    p2.textContent = 'Per modificare o disdire chiama lo 02 2682 6970.';
+    box.append(h, p, p2); d.appendChild(box);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  init().catch(unavailable);
+})();
+</script>
+</body>
+</html>
